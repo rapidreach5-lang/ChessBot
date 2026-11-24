@@ -7,7 +7,6 @@ import streamlit as st
 st.set_page_config(page_title="Chess Move Advisor", layout="wide")
 st.title("Chess Best-Move & Analysis Bot")
 
-# Automatically pick Linux Stockfish on Streamlit Cloud, or Windows .exe locally
 if os.path.exists("/usr/games/stockfish"):
     STOCKFISH_PATH = "/usr/games/stockfish"
 elif os.path.exists("/usr/bin/stockfish"):
@@ -80,7 +79,6 @@ with st.sidebar:
         except ValueError:
             st.error("Invalid FEN string.")
 
-# Run Stockfish analysis directly for the current board position
 top_moves = []
 best_move_obj = None
 
@@ -114,4 +112,62 @@ with col1:
     st.image(board_svg)
 
 with col2:
-    st.
+    st.subheader("Pick & Play a Move")
+
+    if board.is_game_over():
+        st.warning(f"Game Over: {board.result()}")
+    else:
+        legal_moves = list(board.legal_moves)
+        move_labels = {describe_move(board, m): m for m in legal_moves}
+        sorted_labels = sorted(move_labels.keys())
+
+        selected_label = st.selectbox(
+            "Choose a legal move (no typing needed):",
+            options=sorted_labels,
+        )
+
+        btn_col1, btn_col2, btn_col3 = st.columns(3)
+        with btn_col1:
+            if st.button("Play Selected", type="primary"):
+                board.push(move_labels[selected_label])
+                st.rerun()
+
+        with btn_col2:
+            if best_move_obj is not None and st.button("Play #1 Best"):
+                board.push(best_move_obj)
+                st.rerun()
+
+        with btn_col3:
+            if st.button("Undo Move") and board.move_stack:
+                board.pop()
+                st.rerun()
+
+    st.divider()
+    st.subheader("Best Moves Explained")
+
+    if board.is_game_over():
+        st.info("No more moves—the game has ended.")
+    elif not top_moves:
+        st.warning("Stockfish didn't return moves for this position. Try lowering Analysis Depth.")
+    else:
+        best = top_moves[0]
+        if best.get("Mate") is not None:
+            st.metric("Position Evaluation", f"Mate in {best['Mate']}")
+        elif best.get("Centipawn") is not None:
+            st.metric("Position Evaluation", f"{best['Centipawn'] / 100.0:+.2f}")
+
+        for i, move_info in enumerate(top_moves, start=1):
+            move_obj = chess.Move.from_uci(move_info["Move"])
+            plain_desc = describe_move(board, move_obj)
+            cp = move_info.get("Centipawn")
+            mate = move_info.get("Mate")
+
+            if mate is not None:
+                score_text = f"Mate in {mate}"
+            elif cp is not None:
+                score_text = f"{cp / 100.0:+.2f}"
+            else:
+                score_text = "N/A"
+
+            star = "⭐ " if i == 1 else ""
+            st.write(f"{star}**#{i}: {plain_desc}** — Score: `{score_text}`")
