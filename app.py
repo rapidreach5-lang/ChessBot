@@ -102,7 +102,7 @@ with col1:
         board=board,
         lastmove=last_move,
         arrows=arrows,
-        size=479,
+        size=480,
     )
     st.image(board_svg)
 

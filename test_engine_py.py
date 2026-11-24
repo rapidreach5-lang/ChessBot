@@ -21,4 +21,4 @@ top_moves = stockfish.get_top_moves(3)
 evaluation = stockfish.get_evaluation()
 
 print("Evaluation:", evaluation)
-print("Top 3 moves:", top_moves)
+print("Top 3 Moves:", top_moves)
